@@ -30,6 +30,7 @@ IBM_MEMORY=${IBM_MEMORY:-"128M"}
 V2_ID=${V2_ID:-"d007eab8-ac2a-4a7f-287a-f0d50ef08680"}
 V2_PATH=${V2_PATH:-"path"}
 ALTER_ID=${ALTER_ID:-"1"}
+VLESS_EN=${VLESS_EN:-"false"}
 mkdir -p $IBM_APP_NAME
 
 if [ ! -f "./config/v2ray" ]; then
@@ -38,7 +39,7 @@ if [ ! -f "./config/v2ray" ]; then
     new_ver=$(curl -s https://github.com/v2fly/v2ray-core/releases/latest | grep -Po "(\d+\.){2}\d+")
     wget -q -Ov2ray.zip https://github.com/v2fly/v2ray-core/releases/download/v${new_ver}/v2ray-linux-64.zip
     if [ $? -eq 0 ]; then
-        7z x v2ray.zip v2ray v2ctl
+        7z x v2ray.zip v2ray v2ctl *.dat
         chmod 700 v2ctl v2ray
     else
         echo "${RED}download new version failed!${END}"
@@ -56,14 +57,23 @@ sed "s/IBM_MEMORY/${IBM_MEMORY}/" ./$IBM_APP_NAME/manifest.yml -i
 # v2ray config
 cp -vf ./config/v2ray ./$IBM_APP_NAME/$IBM_APP_NAME
 cp -vf ./config/v2ctl ./$IBM_APP_NAME/
-{
-    echo "#! /bin/bash"
-    echo "wget https://raw.githubusercontent.com/$GITHUB_REPOSITORY/master/config/config.json"
-    echo "sed 's/V2_ID/$V2_ID/' config.json -i"
-    echo "sed 's/V2_PATH/$V2_PATH/' config.json -i"
-    echo "sed 's/ALTER_ID/$ALTER_ID/' config.json -i"
 
-} > ./$IBM_APP_NAME/d.sh
+if [ $VLESS_EN == "false" ]; then
+    {
+        echo "#! /bin/bash"
+        echo "wget -oconfig.json https://raw.githubusercontent.com/$GITHUB_REPOSITORY/$GITHUB_REF/config/config_vmess.json"
+        echo "sed 's/V2_ID/$V2_ID/' config.json -i"
+        echo "sed 's/V2_PATH/$V2_PATH/' config.json -i"
+        echo "sed 's/ALTER_ID/$ALTER_ID/' config.json -i"
+    } > ./$IBM_APP_NAME/d.sh
+else
+    {
+        echo "#! /bin/bash"
+        echo "wget -oconfig.json https://raw.githubusercontent.com/$GITHUB_REPOSITORY/$GITHUB_REF/config/config_vless.json"
+        echo "sed 's/V2_ID/$V2_ID/' config.json -i"
+        echo "sed 's/V2_PATH/$V2_PATH/' config.json -i"
+    } > ./$IBM_APP_NAME/d.sh
+fi
 chmod +x ./$IBM_APP_NAME/d.sh
 
 #cat ./$IBM_APP_NAME/d.sh
